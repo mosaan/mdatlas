@@ -76,7 +76,7 @@ func TestMCPServerInitialization(t *testing.T) {
 		t.Errorf("Expected JSONRPC 2.0, got %s", response.JSONRPC)
 	}
 	
-	if response.ID != 1 {
+	if response.ID != 1.0 {
 		t.Errorf("Expected ID 1, got %v", response.ID)
 	}
 	
@@ -184,9 +184,10 @@ func TestMCPServerToolsCall(t *testing.T) {
 				}
 				
 				// Parse the JSON content
+				textContent := firstContent["text"].(string)
 				var structure map[string]interface{}
-				if err := json.Unmarshal([]byte(firstContent["text"].(string)), &structure); err != nil {
-					t.Fatalf("Failed to parse structure JSON: %v", err)
+				if err := json.Unmarshal([]byte(textContent), &structure); err != nil {
+					t.Fatalf("Failed to parse structure JSON: %v. Content: %s", err, textContent)
 				}
 				
 				if structure["file_path"] == "" {
