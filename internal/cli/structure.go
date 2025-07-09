@@ -27,10 +27,12 @@ each section including character counts, line numbers, and nesting levels.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filePath := args[0]
 
-		// Resolve absolute path
-		absPath, err := filepath.Abs(filePath)
-		if err != nil {
-			return fmt.Errorf("failed to resolve file path: %w", err)
+		// Resolve path relative to base directory
+		var absPath string
+		if filepath.IsAbs(filePath) {
+			absPath = filePath
+		} else {
+			absPath = filepath.Join(baseDir, filePath)
 		}
 
 		// Check if file exists
