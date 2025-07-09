@@ -43,6 +43,10 @@ func (p *Parser) ParseStructure(content []byte) (*types.DocumentStructure, error
 
 	// Extract sections from AST
 	sections := p.extractSections(doc, content)
+	
+	// Calculate proper section boundaries
+	sections = p.calculateSectionBoundaries(sections, content)
+	
 	structure.Structure = p.buildHierarchy(sections)
 
 	return structure, nil
@@ -68,22 +72,45 @@ func (p *Parser) extractSections(doc ast.Node, content []byte) []types.Section {
 	return sections
 }
 
+// calculateSectionBoundaries calculates the proper end lines for each section
+func (p *Parser) calculateSectionBoundaries(sections []types.Section, content []byte) []types.Section {
+	lines := strings.Split(string(content), "\n")
+	totalLines := len(lines)
+	
+	for i := range sections {
+		// Find the end line by looking for the next section at the same or higher level
+		endLine := totalLines
+		
+		for j := i + 1; j < len(sections); j++ {
+			if sections[j].Level <= sections[i].Level {
+				endLine = sections[j].StartLine - 1
+				break
+			}
+		}
+		
+		sections[i].EndLine = endLine
+		sections[i].LineCount = endLine - sections[i].StartLine + 1
+		sections[i].CharCount = p.calculateCharCount(nil, content, sections[i].StartLine, endLine)
+	}
+	
+	return sections
+}
+
 // extractSection extracts section information from a heading node
 func (p *Parser) extractSection(node ast.Node, content []byte) types.Section {
 	heading := node.(*ast.Heading)
 
 	title := p.extractHeadingText(heading, content)
 	startLine := p.getLineNumber(node, content)
-	endLine := p.calculateEndLine(node, content)
 
 	return types.Section{
 		ID:        p.generateSectionID(heading, title),
 		Level:     heading.Level,
 		Title:     title,
 		StartLine: startLine,
-		EndLine:   endLine,
-		CharCount: p.calculateCharCount(node, content, startLine, endLine),
-		LineCount: endLine - startLine + 1,
+		EndLine:   startLine, // Will be calculated later in calculateSectionBoundaries
+		CharCount: 0,         // Will be calculated later in calculateSectionBoundaries
+		LineCount: 1,         // Will be calculated later in calculateSectionBoundaries
 		Children:  []types.Section{},
 	}
 }
@@ -209,9 +236,11 @@ func (p *Parser) GetSectionContent(content []byte, sectionID string, includeChil
 	if section.StartLine > 0 && section.StartLine <= len(lines) {
 		endLine := section.EndLine
 		if !includeChildren {
-			// Find the next section at the same or higher level
-			endLine = p.findSectionEnd(structure.Structure, section)
+			// Find the next section at the same or higher level (stop before children)
+			flatSections := p.flattenSections(structure.Structure)
+			endLine = p.findSectionEnd(flatSections, section)
 		}
+		// If includeChildren is true, use the section's EndLine which includes all children
 
 		if endLine > len(lines) {
 			endLine = len(lines)
@@ -237,10 +266,34 @@ func (p *Parser) findSection(sections []types.Section, sectionID string) *types.
 	return nil
 }
 
+// flattenSections flattens a hierarchical section structure into a linear list
+func (p *Parser) flattenSections(sections []types.Section) []types.Section {
+	var flat []types.Section
+	for _, section := range sections {
+		flat = append(flat, section)
+		if len(section.Children) > 0 {
+			flat = append(flat, p.flattenSections(section.Children)...)
+		}
+	}
+	return flat
+}
+
 // findSectionEnd finds the end line of a section (excluding children)
 func (p *Parser) findSectionEnd(sections []types.Section, target *types.Section) int {
-	// Simple implementation - find the next section at the same or higher level
+	// Find the next child section of the target section
 	found := false
+	for _, section := range sections {
+		if found && section.Level > target.Level {
+			// This is a child section, find where it starts
+			return section.StartLine - 1
+		}
+		if section.ID == target.ID {
+			found = true
+		}
+	}
+	
+	// If no children found, find the next section at the same or higher level
+	found = false
 	for _, section := range sections {
 		if found && section.Level <= target.Level {
 			return section.StartLine - 1
@@ -249,5 +302,6 @@ func (p *Parser) findSectionEnd(sections []types.Section, target *types.Section)
 			found = true
 		}
 	}
+	
 	return target.EndLine
 }
