@@ -3,10 +3,9 @@ package cli
 import (
 	"context"
 	"fmt"
-	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/mosaan/mdatlas/internal/mcp"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -29,7 +28,7 @@ Use the subcommands for CLI-based operations.`,
 		if mcpServer {
 			return runMCPServer(baseDir)
 		}
-		
+
 		// If no subcommand is provided, show help
 		return cmd.Help()
 	},
@@ -44,7 +43,7 @@ func init() {
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&baseDir, "base-dir", ".", "Base directory for file access")
 	rootCmd.PersistentFlags().BoolVar(&mcpServer, "mcp-server", false, "Run as MCP server (STDIO mode)")
-	
+
 	// Add subcommands
 	rootCmd.AddCommand(structureCmd)
 	rootCmd.AddCommand(sectionCmd)
@@ -57,7 +56,7 @@ func runMCPServer(baseDir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create MCP server: %w", err)
 	}
-	
+
 	return server.Run(context.Background())
 }
 

@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
 	"github.com/mosaan/mdatlas/internal/core"
 	"github.com/mosaan/mdatlas/pkg/types"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -26,45 +26,45 @@ each section including character counts, line numbers, and nesting levels.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filePath := args[0]
-		
+
 		// Resolve absolute path
 		absPath, err := filepath.Abs(filePath)
 		if err != nil {
 			return fmt.Errorf("failed to resolve file path: %w", err)
 		}
-		
+
 		// Check if file exists
 		if _, err := os.Stat(absPath); os.IsNotExist(err) {
 			return fmt.Errorf("file does not exist: %s", filePath)
 		}
-		
+
 		// Read file content
 		content, err := os.ReadFile(absPath)
 		if err != nil {
 			return fmt.Errorf("failed to read file: %w", err)
 		}
-		
+
 		// Parse structure
 		parser := core.NewParser()
 		structure, err := parser.ParseStructure(content)
 		if err != nil {
 			return fmt.Errorf("failed to parse structure: %w", err)
 		}
-		
+
 		// Set file path in structure
 		structure.FilePath = absPath
-		
+
 		// Filter by max depth if specified
 		if maxDepth > 0 {
 			structure.Structure = filterByDepth(structure.Structure, maxDepth)
 		}
-		
+
 		// Output JSON
 		encoder := json.NewEncoder(os.Stdout)
 		if pretty {
 			encoder.SetIndent("", "  ")
 		}
-		
+
 		return encoder.Encode(structure)
 	},
 }
@@ -79,7 +79,7 @@ func filterByDepth(sections []types.Section, maxDepth int) []types.Section {
 	if maxDepth <= 0 {
 		return sections
 	}
-	
+
 	var filtered []types.Section
 	for _, section := range sections {
 		if section.Level <= maxDepth {

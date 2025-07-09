@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mosaan/mdatlas/pkg/types"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
-	"github.com/mosaan/mdatlas/pkg/types"
 )
 
 // Parser handles Markdown parsing and structure extraction
@@ -24,7 +24,7 @@ func NewParser() *Parser {
 	return &Parser{
 		md: goldmark.New(
 			goldmark.WithExtensions(
-				// Add necessary extensions here
+			// Add necessary extensions here
 			),
 		),
 	}
@@ -33,25 +33,25 @@ func NewParser() *Parser {
 // ParseStructure parses the content and extracts document structure
 func (p *Parser) ParseStructure(content []byte) (*types.DocumentStructure, error) {
 	doc := p.md.Parser().Parse(text.NewReader(content))
-	
+
 	structure := &types.DocumentStructure{
 		TotalChars:   len(content),
 		TotalLines:   bytes.Count(content, []byte("\n")) + 1,
 		Structure:    []types.Section{},
 		LastModified: time.Now(),
 	}
-	
+
 	// Extract sections from AST
 	sections := p.extractSections(doc, content)
 	structure.Structure = p.buildHierarchy(sections)
-	
+
 	return structure, nil
 }
 
 // extractSections walks through the AST and extracts section information
 func (p *Parser) extractSections(doc ast.Node, content []byte) []types.Section {
 	var sections []types.Section
-	
+
 	err := ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering && node.Kind() == ast.KindHeading {
 			section := p.extractSection(node, content)
@@ -59,23 +59,23 @@ func (p *Parser) extractSections(doc ast.Node, content []byte) []types.Section {
 		}
 		return ast.WalkContinue, nil
 	})
-	
+
 	if err != nil {
 		// Handle error gracefully
 		return sections
 	}
-	
+
 	return sections
 }
 
 // extractSection extracts section information from a heading node
 func (p *Parser) extractSection(node ast.Node, content []byte) types.Section {
 	heading := node.(*ast.Heading)
-	
+
 	title := p.extractHeadingText(heading, content)
 	startLine := p.getLineNumber(node, content)
 	endLine := p.calculateEndLine(node, content)
-	
+
 	return types.Section{
 		ID:        p.generateSectionID(heading, title),
 		Level:     heading.Level,
@@ -91,13 +91,13 @@ func (p *Parser) extractSection(node ast.Node, content []byte) types.Section {
 // extractHeadingText extracts the text content from a heading node
 func (p *Parser) extractHeadingText(heading *ast.Heading, content []byte) string {
 	var text strings.Builder
-	
+
 	for child := heading.FirstChild(); child != nil; child = child.NextSibling() {
 		if textNode, ok := child.(*ast.Text); ok {
 			text.Write(textNode.Value(content))
 		}
 	}
-	
+
 	return strings.TrimSpace(text.String())
 }
 
@@ -114,7 +114,7 @@ func (p *Parser) getLineNumber(node ast.Node, content []byte) int {
 	if segment.IsEmpty() {
 		return 1
 	}
-	
+
 	// Count newlines before the segment start
 	beforeSegment := content[:segment.Start]
 	return bytes.Count(beforeSegment, []byte("\n")) + 1
@@ -127,7 +127,7 @@ func (p *Parser) calculateEndLine(node ast.Node, content []byte) int {
 	if lines.Len() == 0 {
 		return p.getLineNumber(node, content)
 	}
-	
+
 	lastSegment := lines.At(lines.Len() - 1)
 	beforeEnd := content[:lastSegment.Stop]
 	return bytes.Count(beforeEnd, []byte("\n")) + 1
@@ -140,12 +140,12 @@ func (p *Parser) calculateCharCount(node ast.Node, content []byte, startLine, en
 	if startLine > len(lines) || endLine > len(lines) || startLine < 1 {
 		return 0
 	}
-	
+
 	var charCount int
 	for i := startLine - 1; i < endLine && i < len(lines); i++ {
 		charCount += len(lines[i]) + 1 // +1 for newline
 	}
-	
+
 	return charCount
 }
 
@@ -154,16 +154,16 @@ func (p *Parser) buildHierarchy(sections []types.Section) []types.Section {
 	if len(sections) == 0 {
 		return sections
 	}
-	
+
 	var result []types.Section
 	stack := make([]*types.Section, 0)
-	
+
 	for _, section := range sections {
 		// Find the correct parent level
 		for len(stack) > 0 && stack[len(stack)-1].Level >= section.Level {
 			stack = stack[:len(stack)-1]
 		}
-		
+
 		sectionCopy := section
 		if len(stack) == 0 {
 			result = append(result, sectionCopy)
@@ -171,10 +171,10 @@ func (p *Parser) buildHierarchy(sections []types.Section) []types.Section {
 			parent := stack[len(stack)-1]
 			parent.Children = append(parent.Children, sectionCopy)
 		}
-		
+
 		stack = append(stack, &sectionCopy)
 	}
-	
+
 	return result
 }
 
@@ -184,19 +184,19 @@ func (p *Parser) GetSectionContent(content []byte, sectionID string, includeChil
 	if err != nil {
 		return nil, err
 	}
-	
+
 	section := p.findSection(structure.Structure, sectionID)
 	if section == nil {
 		return nil, fmt.Errorf("section not found: %s", sectionID)
 	}
-	
+
 	sectionContent := &types.SectionContent{
 		ID:              section.ID,
 		Title:           section.Title,
 		Format:          "markdown",
 		IncludeChildren: includeChildren,
 	}
-	
+
 	// Extract content based on line numbers
 	lines := strings.Split(string(content), "\n")
 	if section.StartLine > 0 && section.StartLine <= len(lines) {
@@ -205,15 +205,15 @@ func (p *Parser) GetSectionContent(content []byte, sectionID string, includeChil
 			// Find the next section at the same or higher level
 			endLine = p.findSectionEnd(structure.Structure, section)
 		}
-		
+
 		if endLine > len(lines) {
 			endLine = len(lines)
 		}
-		
+
 		contentLines := lines[section.StartLine-1 : endLine]
 		sectionContent.Content = strings.Join(contentLines, "\n")
 	}
-	
+
 	return sectionContent, nil
 }
 
