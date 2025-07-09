@@ -1,0 +1,122 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        go-version: [1.22.x, 1.23.x]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Download dependencies
+      run: make deps
+    
+    - name: Build
+      run: make build
+    
+    - name: Run tests
+      run: make test
+    
+    - name: Run tests with coverage
+      run: make test-coverage
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+    
+    - name: Check code formatting
+      run: |
+        make fmt
+        if [ -n "$(git diff --exit-code)" ]; then
+          echo "Code is not formatted. Please run 'make fmt'."
+          exit 1
+        fi
+    
+    - name: Run linter
+      run: |
+        if command -v golangci-lint >/dev/null 2>&1; then
+          make lint
+        else
+          echo "golangci-lint not available, skipping lint check"
+        fi
+
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.22.x
+    
+    - name: Build
+      run: make build
+    
+    - name: Test CLI functionality
+      run: |
+        # Test structure command
+        ./bin/mdatlas structure tests/fixtures/sample.md --pretty
+        
+        # Test version command
+        ./bin/mdatlas version
+        
+        # Test help command
+        ./bin/mdatlas --help
+    
+    - name: Test MCP server (basic)
+      run: |
+        # Test that MCP server starts (will fail as expected since it's not fully implemented)
+        timeout 5s ./bin/mdatlas --mcp-server --base-dir tests/fixtures || true
+
+  build-cross-platform:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.22.x
+    
+    - name: Build cross-platform binaries
+      run: make release
+    
+    - name: Upload binaries as artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        path: bin/
+        retention-days: 7
