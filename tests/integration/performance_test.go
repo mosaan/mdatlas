@@ -443,9 +443,11 @@ func extractSectionIDs(sections []interface{}) []string {
 			ids = append(ids, id.(string))
 		}
 		
-		if children, exists := sectionMap["children"]; exists {
-			childIDs := extractSectionIDs(children.([]interface{}))
-			ids = append(ids, childIDs...)
+		if children, exists := sectionMap["children"]; exists && children != nil {
+			if childrenSlice, ok := children.([]interface{}); ok {
+				childIDs := extractSectionIDs(childrenSlice)
+				ids = append(ids, childIDs...)
+			}
 		}
 	}
 	
@@ -466,8 +468,10 @@ func checkSectionFields(t *testing.T, sections []interface{}) {
 		}
 		
 		// Check children recursively
-		if children, exists := sectionMap["children"]; exists {
-			checkSectionFields(t, children.([]interface{}))
+		if children, exists := sectionMap["children"]; exists && children != nil {
+			if childrenSlice, ok := children.([]interface{}); ok {
+				checkSectionFields(t, childrenSlice)
+			}
 		}
 	}
 }

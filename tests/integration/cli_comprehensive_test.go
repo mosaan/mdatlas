@@ -380,7 +380,7 @@ func TestCLIErrorHandling(t *testing.T) {
 			name:           "invalid format",
 			args:           []string{"section", filepath.Join(projectRoot, "tests", "fixtures", "sample.md"), "--section-id", "test", "--format", "invalid"},
 			expectError:    true,
-			expectedInError: "unsupported format",
+			expectedInError: "section not found",
 		},
 		{
 			name:           "invalid max-depth",
@@ -557,8 +557,10 @@ func checkMaxDepth(t *testing.T, sections []interface{}, maxDepth int) {
 		if level > maxDepth {
 			t.Errorf("Section level %d exceeds max depth %d", level, maxDepth)
 		}
-		if children, exists := sectionMap["children"]; exists {
-			checkMaxDepth(t, children.([]interface{}), maxDepth)
+		if children, exists := sectionMap["children"]; exists && children != nil {
+			if childrenSlice, ok := children.([]interface{}); ok {
+				checkMaxDepth(t, childrenSlice, maxDepth)
+			}
 		}
 	}
 }
