@@ -164,15 +164,22 @@ func (p *Parser) buildHierarchy(sections []types.Section) []types.Section {
 			stack = stack[:len(stack)-1]
 		}
 
-		sectionCopy := section
+		// Create a new section with empty children
+		newSection := section
+		newSection.Children = make([]types.Section, 0)
+		
 		if len(stack) == 0 {
-			result = append(result, sectionCopy)
+			// This is a root level section
+			result = append(result, newSection)
+			// Add pointer to the section we just added to result
+			stack = append(stack, &result[len(result)-1])
 		} else {
+			// This is a child section
 			parent := stack[len(stack)-1]
-			parent.Children = append(parent.Children, sectionCopy)
+			parent.Children = append(parent.Children, newSection)
+			// Add pointer to the section we just added to parent's children
+			stack = append(stack, &parent.Children[len(parent.Children)-1])
 		}
-
-		stack = append(stack, &sectionCopy)
 	}
 
 	return result
