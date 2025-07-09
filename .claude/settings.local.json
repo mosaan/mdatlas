@@ -7,7 +7,8 @@
       "Bash(./bin/mdatlas:*)",
       "Bash(go test:*)",
       "Bash(mkdir:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
