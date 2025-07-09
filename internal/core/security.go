@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/mosaan/mdatlas/pkg/types"
 )
@@ -69,10 +70,12 @@ func (ac *AccessControl) IsAllowed(filePath string) bool {
 
 // ValidatePath validates and normalizes a file path
 func (ac *AccessControl) ValidatePath(filePath string) (string, error) {
-	// Resolve to absolute path
-	absPath, err := filepath.Abs(filePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to resolve path: %w", err)
+	// Resolve relative to base directory
+	var absPath string
+	if filepath.IsAbs(filePath) {
+		absPath = filePath
+	} else {
+		absPath = filepath.Join(ac.config.BaseDir, filePath)
 	}
 	
 	// Clean the path to remove any path traversal attempts
@@ -306,4 +309,3 @@ func (sfr *SecureFileReader) ReadFileLines(filePath string, startLine, endLine i
 	return lines[startLine-1:endLine], nil
 }
 
-import "time"
