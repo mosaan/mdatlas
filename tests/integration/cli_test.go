@@ -73,25 +73,11 @@ func TestCLIStructureCommand(t *testing.T) {
 }
 
 func TestCLISectionCommand(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("make", "build")
-	buildCmd.Dir = filepath.Join("..", "..")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	
-	// Create test fixture
-	testFile := filepath.Join("..", "fixtures", "sample.md")
-	if _, err := os.Stat(testFile); os.IsNotExist(err) {
-		t.Skipf("Test fixture not found: %s", testFile)
-	}
+	projectRoot, binaryPath := setupTest(t)
+	testFile := filepath.Join(projectRoot, "tests", "fixtures", "sample.md")
 	
 	// First get the structure to find a section ID
-	binaryPath := filepath.Join("..", "..", "bin", "mdatlas")
-	structureCmd := exec.Command(binaryPath, "structure", testFile)
-	structureCmd.Dir = filepath.Join("..", "..")
-	
-	structureOutput, err := structureCmd.Output()
+	structureOutput, err := exec.Command(binaryPath, "structure", testFile).Output()
 	if err != nil {
 		t.Fatalf("Failed to get structure: %v", err)
 	}
@@ -118,10 +104,7 @@ func TestCLISectionCommand(t *testing.T) {
 	}
 	
 	// Run section command
-	sectionCmd := exec.Command(binaryPath, "section", testFile, "--section-id", sectionID)
-	sectionCmd.Dir = filepath.Join("..", "..")
-	
-	sectionOutput, err := sectionCmd.Output()
+	sectionOutput, err := exec.Command(binaryPath, "section", testFile, "--section-id", sectionID).Output()
 	if err != nil {
 		t.Fatalf("Section command failed: %v", err)
 	}
@@ -139,19 +122,10 @@ func TestCLISectionCommand(t *testing.T) {
 }
 
 func TestCLIVersionCommand(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("make", "build")
-	buildCmd.Dir = filepath.Join("..", "..")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
+	_, binaryPath := setupTest(t)
 	
 	// Run version command
-	binaryPath := filepath.Join("..", "..", "bin", "mdatlas")
-	cmd := exec.Command(binaryPath, "version")
-	cmd.Dir = filepath.Join("..", "..")
-	
-	output, err := cmd.Output()
+	output, err := exec.Command(binaryPath, "version").Output()
 	if err != nil {
 		t.Fatalf("Version command failed: %v", err)
 	}
@@ -168,19 +142,10 @@ func TestCLIVersionCommand(t *testing.T) {
 }
 
 func TestCLIHelpCommand(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("make", "build")
-	buildCmd.Dir = filepath.Join("..", "..")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
+	_, binaryPath := setupTest(t)
 	
 	// Run help command
-	binaryPath := filepath.Join("..", "..", "bin", "mdatlas")
-	cmd := exec.Command(binaryPath, "--help")
-	cmd.Dir = filepath.Join("..", "..")
-	
-	output, err := cmd.Output()
+	output, err := exec.Command(binaryPath, "--help").Output()
 	if err != nil {
 		t.Fatalf("Help command failed: %v", err)
 	}
