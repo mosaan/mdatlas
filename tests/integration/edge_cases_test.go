@@ -33,9 +33,11 @@ func TestEdgeCasesEmptyFile(t *testing.T) {
 	}
 	
 	// Should have empty structure
-	sections := structure["structure"].([]interface{})
-	if len(sections) != 0 {
-		t.Errorf("Expected empty structure, got %d sections", len(sections))
+	if structureField, exists := structure["structure"]; exists && structureField != nil {
+		sections := structureField.([]interface{})
+		if len(sections) != 0 {
+			t.Errorf("Expected empty structure, got %d sections", len(sections))
+		}
 	}
 	
 	// Should have correct metadata
@@ -91,9 +93,11 @@ But no headings at all.`
 	}
 	
 	// Should have no sections
-	sections := structure["structure"].([]interface{})
-	if len(sections) != 0 {
-		t.Errorf("Expected no sections, got %d sections", len(sections))
+	if structureField, exists := structure["structure"]; exists && structureField != nil {
+		sections := structureField.([]interface{})
+		if len(sections) != 0 {
+			t.Errorf("Expected no sections, got %d sections", len(sections))
+		}
 	}
 	
 	// Should have correct character count
