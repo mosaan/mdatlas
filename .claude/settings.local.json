@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(./bin/mdatlas:*)",
+      "Bash(go test:*)",
+      "Bash(mkdir:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }
