@@ -251,33 +251,33 @@ func TestCLIHelpCommands(t *testing.T) {
 	_, binaryPath := setupTest(t)
 
 	tests := []struct {
-		name string
-		args []string
+		name            string
+		args            []string
 		expectedContent []string
 	}{
 		{
-			name: "general help",
-			args: []string{"--help"},
+			name:            "general help",
+			args:            []string{"--help"},
 			expectedContent: []string{"Usage:", "Available Commands:", "structure", "section", "version"},
 		},
 		{
-			name: "structure help",
-			args: []string{"structure", "--help"},
+			name:            "structure help",
+			args:            []string{"structure", "--help"},
 			expectedContent: []string{"Usage:", "mdatlas structure", "--max-depth", "--pretty"},
 		},
 		{
-			name: "section help",
-			args: []string{"section", "--help"},
+			name:            "section help",
+			args:            []string{"section", "--help"},
 			expectedContent: []string{"Usage:", "mdatlas section", "--section-id", "--format", "--include-children"},
 		},
 		{
-			name: "version help",
-			args: []string{"version", "--help"},
+			name:            "version help",
+			args:            []string{"version", "--help"},
 			expectedContent: []string{"Usage:", "Print the version information"},
 		},
 		{
-			name: "help command",
-			args: []string{"help"},
+			name:            "help command",
+			args:            []string{"help"},
 			expectedContent: []string{"Usage:", "Available Commands:"},
 		},
 	}
@@ -289,7 +289,7 @@ func TestCLIHelpCommands(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Help command failed: %v", err)
 			}
-			
+
 			content := string(output)
 			for _, expected := range tt.expectedContent {
 				if !strings.Contains(content, expected) {
@@ -353,51 +353,51 @@ func TestCLIErrorHandling(t *testing.T) {
 	projectRoot, binaryPath := setupTest(t)
 
 	tests := []struct {
-		name           string
-		args           []string
-		expectError    bool
+		name            string
+		args            []string
+		expectError     bool
 		expectedInError string
 	}{
 		{
-			name:           "nonexistent file",
-			args:           []string{"structure", "nonexistent.md"},
-			expectError:    true,
+			name:            "nonexistent file",
+			args:            []string{"structure", "nonexistent.md"},
+			expectError:     true,
 			expectedInError: "does not exist",
 		},
 		{
-			name:           "missing section ID",
-			args:           []string{"section", filepath.Join(projectRoot, "tests", "fixtures", "sample.md")},
-			expectError:    true,
+			name:            "missing section ID",
+			args:            []string{"section", filepath.Join(projectRoot, "tests", "fixtures", "sample.md")},
+			expectError:     true,
 			expectedInError: "required",
 		},
 		{
-			name:           "invalid section ID",
-			args:           []string{"section", filepath.Join(projectRoot, "tests", "fixtures", "sample.md"), "--section-id", "invalid"},
-			expectError:    true,
+			name:            "invalid section ID",
+			args:            []string{"section", filepath.Join(projectRoot, "tests", "fixtures", "sample.md"), "--section-id", "invalid"},
+			expectError:     true,
 			expectedInError: "section not found",
 		},
 		{
-			name:           "invalid format",
-			args:           []string{"section", filepath.Join(projectRoot, "tests", "fixtures", "sample.md"), "--section-id", "test", "--format", "invalid"},
-			expectError:    true,
+			name:            "invalid format",
+			args:            []string{"section", filepath.Join(projectRoot, "tests", "fixtures", "sample.md"), "--section-id", "test", "--format", "invalid"},
+			expectError:     true,
 			expectedInError: "section not found",
 		},
 		{
-			name:           "invalid max-depth",
-			args:           []string{"structure", filepath.Join(projectRoot, "tests", "fixtures", "sample.md"), "--max-depth", "-1"},
-			expectError:    false, // Should handle gracefully
+			name:            "invalid max-depth",
+			args:            []string{"structure", filepath.Join(projectRoot, "tests", "fixtures", "sample.md"), "--max-depth", "-1"},
+			expectError:     false, // Should handle gracefully
 			expectedInError: "",
 		},
 		{
-			name:           "missing file argument",
-			args:           []string{"structure"},
-			expectError:    true,
+			name:            "missing file argument",
+			args:            []string{"structure"},
+			expectError:     true,
 			expectedInError: "accepts 1 arg",
 		},
 		{
-			name:           "too many arguments",
-			args:           []string{"structure", "file1.md", "file2.md"},
-			expectError:    true,
+			name:            "too many arguments",
+			args:            []string{"structure", "file1.md", "file2.md"},
+			expectError:     true,
 			expectedInError: "accepts 1 arg",
 		},
 	}
@@ -406,7 +406,7 @@ func TestCLIErrorHandling(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := exec.Command(binaryPath, tt.args...)
 			output, err := cmd.CombinedOutput()
-			
+
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("Expected error but command succeeded. Output: %s", string(output))
@@ -505,9 +505,9 @@ func TestCLIPerformance(t *testing.T) {
 	testFile := filepath.Join(projectRoot, "tests", "fixtures", "complex.md")
 
 	tests := []struct {
-		name      string
-		args      []string
-		maxTime   time.Duration
+		name    string
+		args    []string
+		maxTime time.Duration
 	}{
 		{
 			name:    "structure analysis performance",
@@ -537,11 +537,11 @@ func TestCLIPerformance(t *testing.T) {
 			cmd := exec.Command(binaryPath, tt.args...)
 			_, err := cmd.Output()
 			elapsed := time.Since(start)
-			
+
 			if err != nil {
 				t.Fatalf("Command failed: %v", err)
 			}
-			
+
 			if elapsed > tt.maxTime {
 				t.Errorf("Command took too long: %v (max: %v)", elapsed, tt.maxTime)
 			}

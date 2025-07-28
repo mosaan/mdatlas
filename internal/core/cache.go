@@ -31,20 +31,20 @@ func NewCache(maxSize int, ttl time.Duration) *Cache {
 	if maxSize <= 0 {
 		maxSize = 100 // Default max size
 	}
-	
+
 	if ttl <= 0 {
 		ttl = 30 * time.Minute // Default TTL
 	}
-	
+
 	cache := &Cache{
 		structures: make(map[string]*CacheEntry),
 		maxSize:    maxSize,
 		ttl:        ttl,
 	}
-	
+
 	// Start cleanup goroutine
 	go cache.cleanupExpired()
-	
+
 	return cache
 }
 
@@ -52,25 +52,25 @@ func NewCache(maxSize int, ttl time.Duration) *Cache {
 func (c *Cache) GetStructure(filePath string) (*types.DocumentStructure, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	entry, exists := c.structures[filePath]
 	if !exists {
 		return nil, false
 	}
-	
+
 	// Check if entry is expired
 	if time.Since(entry.LastAccessed) > c.ttl {
 		return nil, false
 	}
-	
+
 	// Check if file has been modified
 	if !c.isFileUnchanged(filePath, entry) {
 		return nil, false
 	}
-	
+
 	// Update access time
 	entry.LastAccessed = time.Now()
-	
+
 	return entry.Structure, true
 }
 
@@ -78,24 +78,24 @@ func (c *Cache) GetStructure(filePath string) (*types.DocumentStructure, bool) {
 func (c *Cache) SetStructure(filePath string, structure *types.DocumentStructure) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// Get file information
 	stat, err := os.Stat(filePath)
 	if err != nil {
 		return // Skip caching if we can't stat the file
 	}
-	
+
 	// Calculate file hash
 	hash, err := c.calculateFileHash(filePath)
 	if err != nil {
 		return // Skip caching if we can't hash the file
 	}
-	
+
 	// Check if we need to evict entries
 	if len(c.structures) >= c.maxSize {
 		c.evictLRU()
 	}
-	
+
 	// Create cache entry
 	entry := &CacheEntry{
 		Structure:    structure,
@@ -103,7 +103,7 @@ func (c *Cache) SetStructure(filePath string, structure *types.DocumentStructure
 		FileModTime:  stat.ModTime(),
 		FileHash:     hash,
 	}
-	
+
 	c.structures[filePath] = entry
 }
 
@@ -111,7 +111,7 @@ func (c *Cache) SetStructure(filePath string, structure *types.DocumentStructure
 func (c *Cache) InvalidateStructure(filePath string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	delete(c.structures, filePath)
 }
 
@@ -119,7 +119,7 @@ func (c *Cache) InvalidateStructure(filePath string) {
 func (c *Cache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.structures = make(map[string]*CacheEntry)
 }
 
@@ -127,7 +127,7 @@ func (c *Cache) Clear() {
 func (c *Cache) Size() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	return len(c.structures)
 }
 
@@ -135,13 +135,13 @@ func (c *Cache) Size() int {
 func (c *Cache) Stats() CacheStats {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	stats := CacheStats{
 		Size:    len(c.structures),
 		MaxSize: c.maxSize,
 		TTL:     c.ttl,
 	}
-	
+
 	// Calculate oldest and newest entries
 	var oldestAccess, newestAccess time.Time
 	for _, entry := range c.structures {
@@ -152,10 +152,10 @@ func (c *Cache) Stats() CacheStats {
 			newestAccess = entry.LastAccessed
 		}
 	}
-	
+
 	stats.OldestEntry = oldestAccess
 	stats.NewestEntry = newestAccess
-	
+
 	return stats
 }
 
@@ -165,18 +165,18 @@ func (c *Cache) isFileUnchanged(filePath string, entry *CacheEntry) bool {
 	if err != nil {
 		return false
 	}
-	
+
 	// Check modification time
 	if !stat.ModTime().Equal(entry.FileModTime) {
 		return false
 	}
-	
+
 	// Check file hash for additional verification
 	hash, err := c.calculateFileHash(filePath)
 	if err != nil {
 		return false
 	}
-	
+
 	return hash == entry.FileHash
 }
 
@@ -186,7 +186,7 @@ func (c *Cache) calculateFileHash(filePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	hash := md5.Sum(content)
 	return fmt.Sprintf("%x", hash), nil
 }
@@ -196,17 +196,17 @@ func (c *Cache) evictLRU() {
 	if len(c.structures) == 0 {
 		return
 	}
-	
+
 	var oldestKey string
 	var oldestTime time.Time
-	
+
 	for key, entry := range c.structures {
 		if oldestTime.IsZero() || entry.LastAccessed.Before(oldestTime) {
 			oldestTime = entry.LastAccessed
 			oldestKey = key
 		}
 	}
-	
+
 	if oldestKey != "" {
 		delete(c.structures, oldestKey)
 	}
@@ -216,17 +216,17 @@ func (c *Cache) evictLRU() {
 func (c *Cache) cleanupExpired() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
-	
+
 	for range ticker.C {
 		c.mu.Lock()
-		
+
 		now := time.Now()
 		for key, entry := range c.structures {
 			if now.Sub(entry.LastAccessed) > c.ttl {
 				delete(c.structures, key)
 			}
 		}
-		
+
 		c.mu.Unlock()
 	}
 }
@@ -244,27 +244,27 @@ type CacheStats struct {
 func (c *Cache) RefreshStructure(filePath string, parser *Parser) error {
 	// Remove existing cache entry
 	c.InvalidateStructure(filePath)
-	
+
 	// Read and parse the file
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
-	
+
 	structure, err := parser.ParseStructure(content)
 	if err != nil {
 		return fmt.Errorf("failed to parse structure for %s: %w", filePath, err)
 	}
-	
+
 	// Set file path and modification time
 	structure.FilePath = filePath
 	if stat, err := os.Stat(filePath); err == nil {
 		structure.LastModified = stat.ModTime()
 	}
-	
+
 	// Cache the new structure
 	c.SetStructure(filePath, structure)
-	
+
 	return nil
 }
 
@@ -272,12 +272,12 @@ func (c *Cache) RefreshStructure(filePath string, parser *Parser) error {
 func (c *Cache) GetCachedFiles() []string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	files := make([]string, 0, len(c.structures))
 	for filePath := range c.structures {
 		files = append(files, filePath)
 	}
-	
+
 	return files
 }
 
@@ -288,6 +288,6 @@ func (c *Cache) WarmUpCache(filePaths []string, parser *Parser) error {
 			return fmt.Errorf("failed to warm up cache for %s: %w", filePath, err)
 		}
 	}
-	
+
 	return nil
 }

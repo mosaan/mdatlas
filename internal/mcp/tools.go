@@ -162,26 +162,26 @@ func (th *ToolHandler) handleGetMarkdownStructure(args map[string]interface{}) T
 	if !ok {
 		return th.createErrorResult("Missing or invalid file_path parameter")
 	}
-	
+
 	// Validate file access
 	validPath, err := th.accessControl.ValidatePath(filePath)
 	if err != nil {
 		return th.createErrorResult(fmt.Sprintf("Access denied: %v", err))
 	}
-	
+
 	// Get document structure
 	structure, err := th.structureManager.GetDocumentStructure(validPath)
 	if err != nil {
 		return th.createErrorResult(fmt.Sprintf("Failed to get structure: %v", err))
 	}
-	
+
 	// Apply max depth filter if specified
 	if maxDepthRaw, exists := args["max_depth"]; exists {
 		if maxDepth, ok := maxDepthRaw.(float64); ok {
 			structure.Structure = th.filterByDepth(structure.Structure, int(maxDepth))
 		}
 	}
-	
+
 	return ToolResult{
 		Content: []Content{CreateJSONContent(structure)},
 	}
@@ -193,18 +193,18 @@ func (th *ToolHandler) handleGetMarkdownSection(args map[string]interface{}) Too
 	if !ok {
 		return th.createErrorResult("Missing or invalid file_path parameter")
 	}
-	
+
 	sectionID, ok := args["section_id"].(string)
 	if !ok {
 		return th.createErrorResult("Missing or invalid section_id parameter")
 	}
-	
+
 	// Validate file access
 	validPath, err := th.accessControl.ValidatePath(filePath)
 	if err != nil {
 		return th.createErrorResult(fmt.Sprintf("Access denied: %v", err))
 	}
-	
+
 	// Get optional parameters
 	includeChildren := false
 	if include, exists := args["include_children"]; exists {
@@ -212,23 +212,23 @@ func (th *ToolHandler) handleGetMarkdownSection(args map[string]interface{}) Too
 			includeChildren = b
 		}
 	}
-	
+
 	format := "markdown"
 	if f, exists := args["format"]; exists {
 		if s, ok := f.(string); ok {
 			format = s
 		}
 	}
-	
+
 	// Get section content
 	sectionContent, err := th.structureManager.GetSectionContent(validPath, sectionID, includeChildren)
 	if err != nil {
 		return th.createErrorResult(fmt.Sprintf("Failed to get section: %v", err))
 	}
-	
+
 	// Set format
 	sectionContent.Format = format
-	
+
 	// Return based on format
 	switch format {
 	case "json":
@@ -248,18 +248,18 @@ func (th *ToolHandler) handleSearchMarkdownContent(args map[string]interface{}) 
 	if !ok {
 		return th.createErrorResult("Missing or invalid file_path parameter")
 	}
-	
+
 	query, ok := args["query"].(string)
 	if !ok {
 		return th.createErrorResult("Missing or invalid query parameter")
 	}
-	
+
 	// Validate file access
 	validPath, err := th.accessControl.ValidatePath(filePath)
 	if err != nil {
 		return th.createErrorResult(fmt.Sprintf("Access denied: %v", err))
 	}
-	
+
 	// Get case sensitivity setting
 	caseSensitive := false
 	if cs, exists := args["case_sensitive"]; exists {
@@ -267,20 +267,20 @@ func (th *ToolHandler) handleSearchMarkdownContent(args map[string]interface{}) 
 			caseSensitive = b
 		}
 	}
-	
+
 	// Search sections
 	sections, err := th.structureManager.SearchSections(validPath, query, caseSensitive)
 	if err != nil {
 		return th.createErrorResult(fmt.Sprintf("Search failed: %v", err))
 	}
-	
+
 	searchResult := map[string]interface{}{
 		"file_path": filePath,
 		"query":     query,
 		"results":   sections,
 		"count":     len(sections),
 	}
-	
+
 	return ToolResult{
 		Content: []Content{CreateJSONContent(searchResult)},
 	}
@@ -292,19 +292,19 @@ func (th *ToolHandler) handleGetMarkdownStats(args map[string]interface{}) ToolR
 	if !ok {
 		return th.createErrorResult("Missing or invalid file_path parameter")
 	}
-	
+
 	// Validate file access
 	validPath, err := th.accessControl.ValidatePath(filePath)
 	if err != nil {
 		return th.createErrorResult(fmt.Sprintf("Access denied: %v", err))
 	}
-	
+
 	// Get document statistics
 	stats, err := th.structureManager.GetDocumentStats(validPath)
 	if err != nil {
 		return th.createErrorResult(fmt.Sprintf("Failed to get stats: %v", err))
 	}
-	
+
 	return ToolResult{
 		Content: []Content{CreateJSONContent(stats)},
 	}
@@ -316,13 +316,13 @@ func (th *ToolHandler) handleGetMarkdownTOC(args map[string]interface{}) ToolRes
 	if !ok {
 		return th.createErrorResult("Missing or invalid file_path parameter")
 	}
-	
+
 	// Validate file access
 	validPath, err := th.accessControl.ValidatePath(filePath)
 	if err != nil {
 		return th.createErrorResult(fmt.Sprintf("Access denied: %v", err))
 	}
-	
+
 	// Get max depth
 	maxDepth := 0
 	if maxDepthRaw, exists := args["max_depth"]; exists {
@@ -330,19 +330,19 @@ func (th *ToolHandler) handleGetMarkdownTOC(args map[string]interface{}) ToolRes
 			maxDepth = int(md)
 		}
 	}
-	
+
 	// Generate table of contents
 	toc, err := th.structureManager.GetTableOfContents(validPath, maxDepth)
 	if err != nil {
 		return th.createErrorResult(fmt.Sprintf("Failed to generate TOC: %v", err))
 	}
-	
+
 	tocResult := map[string]interface{}{
 		"file_path": filePath,
 		"toc":       toc,
 		"count":     len(toc),
 	}
-	
+
 	return ToolResult{
 		Content: []Content{CreateJSONContent(tocResult)},
 	}
@@ -353,7 +353,7 @@ func (th *ToolHandler) filterByDepth(sections []types.Section, maxDepth int) []t
 	if maxDepth <= 0 {
 		return sections
 	}
-	
+
 	var filtered []types.Section
 	for _, section := range sections {
 		if section.Level <= maxDepth {
@@ -391,7 +391,7 @@ func (rh *ResourceHandler) GetAvailableResources() ([]Resource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list files: %w", err)
 	}
-	
+
 	var resources []Resource
 	for _, file := range files {
 		// Create structure resource
@@ -402,7 +402,7 @@ func (rh *ResourceHandler) GetAvailableResources() ([]Resource, error) {
 			Description: fmt.Sprintf("Hierarchical structure of %s", file),
 			MimeType:    "application/json",
 		})
-		
+
 		// Create content resource
 		contentURI := fmt.Sprintf("markdown://file/%s/content", file)
 		resources = append(resources, Resource{
@@ -412,7 +412,7 @@ func (rh *ResourceHandler) GetAvailableResources() ([]Resource, error) {
 			MimeType:    "text/markdown",
 		})
 	}
-	
+
 	return resources, nil
 }
 
@@ -423,17 +423,17 @@ func (rh *ResourceHandler) ReadResource(uri string) (ResourceReadResult, error) 
 	if len(parts) < 4 || parts[0] != "markdown:" || parts[1] != "" || parts[2] != "file" {
 		return ResourceReadResult{}, fmt.Errorf("invalid resource URI: %s", uri)
 	}
-	
+
 	// Extract file path and resource type
 	filePath := strings.Join(parts[3:len(parts)-1], "/")
 	resourceType := parts[len(parts)-1]
-	
+
 	// Validate file access
 	validPath, err := rh.accessControl.ValidatePath(filePath)
 	if err != nil {
 		return ResourceReadResult{}, fmt.Errorf("access denied: %w", err)
 	}
-	
+
 	switch resourceType {
 	case "structure":
 		return rh.readStructureResource(validPath)
@@ -449,12 +449,12 @@ func (rh *ResourceHandler) readStructureResource(filePath string) (ResourceReadR
 	// Create structure manager
 	cache := core.NewCache(100, 0) // No TTL for resources
 	structureManager := core.NewStructureManager(cache)
-	
+
 	structure, err := structureManager.GetDocumentStructure(filePath)
 	if err != nil {
 		return ResourceReadResult{}, fmt.Errorf("failed to get structure: %w", err)
 	}
-	
+
 	return ResourceReadResult{
 		Contents: []Content{CreateJSONContent(structure)},
 	}, nil
@@ -467,7 +467,7 @@ func (rh *ResourceHandler) readContentResource(filePath string) (ResourceReadRes
 	if err != nil {
 		return ResourceReadResult{}, fmt.Errorf("failed to read file: %w", err)
 	}
-	
+
 	return ResourceReadResult{
 		Contents: []Content{CreateTextContent(string(content))},
 	}, nil

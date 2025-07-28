@@ -83,8 +83,8 @@ type Content struct {
 
 // Resource list result
 type ResourceListResult struct {
-	Resources []Resource `json:"resources"`
-	NextCursor string    `json:"nextCursor,omitempty"`
+	Resources  []Resource `json:"resources"`
+	NextCursor string     `json:"nextCursor,omitempty"`
 }
 
 // Resource read result
@@ -188,7 +188,7 @@ func CreateNotification(method string, params interface{}) MCPNotification {
 			rawParams = data
 		}
 	}
-	
+
 	return MCPNotification{
 		JSONRPC: "2.0",
 		Method:  method,
@@ -201,11 +201,11 @@ func ValidateRequest(req MCPRequest) error {
 	if req.JSONRPC != "2.0" {
 		return fmt.Errorf("invalid JSON-RPC version: %s", req.JSONRPC)
 	}
-	
+
 	if req.Method == "" {
 		return fmt.Errorf("missing method")
 	}
-	
+
 	return nil
 }
 
@@ -215,11 +215,11 @@ func ParseToolCallParams(params json.RawMessage) (*ToolCallParams, error) {
 	if err := json.Unmarshal(params, &toolParams); err != nil {
 		return nil, fmt.Errorf("failed to parse tool call params: %w", err)
 	}
-	
+
 	if toolParams.Name == "" {
 		return nil, fmt.Errorf("missing tool name")
 	}
-	
+
 	return &toolParams, nil
 }
 
@@ -231,7 +231,7 @@ func ParseResourceListParams(params json.RawMessage) (*ResourceListParams, error
 			return nil, fmt.Errorf("failed to parse resource list params: %w", err)
 		}
 	}
-	
+
 	return &listParams, nil
 }
 
@@ -241,11 +241,11 @@ func ParseResourceReadParams(params json.RawMessage) (*ResourceReadParams, error
 	if err := json.Unmarshal(params, &readParams); err != nil {
 		return nil, fmt.Errorf("failed to parse resource read params: %w", err)
 	}
-	
+
 	if readParams.URI == "" {
 		return nil, fmt.Errorf("missing resource URI")
 	}
-	
+
 	return &readParams, nil
 }
 

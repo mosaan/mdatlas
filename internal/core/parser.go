@@ -43,10 +43,10 @@ func (p *Parser) ParseStructure(content []byte) (*types.DocumentStructure, error
 
 	// Extract sections from AST
 	sections := p.extractSections(doc, content)
-	
+
 	// Calculate proper section boundaries
 	sections = p.calculateSectionBoundaries(sections, content)
-	
+
 	structure.Structure = p.buildHierarchy(sections)
 
 	return structure, nil
@@ -76,23 +76,23 @@ func (p *Parser) extractSections(doc ast.Node, content []byte) []types.Section {
 func (p *Parser) calculateSectionBoundaries(sections []types.Section, content []byte) []types.Section {
 	lines := strings.Split(string(content), "\n")
 	totalLines := len(lines)
-	
+
 	for i := range sections {
 		// Find the end line by looking for the next section at the same or higher level
 		endLine := totalLines
-		
+
 		for j := i + 1; j < len(sections); j++ {
 			if sections[j].Level <= sections[i].Level {
 				endLine = sections[j].StartLine - 1
 				break
 			}
 		}
-		
+
 		sections[i].EndLine = endLine
 		sections[i].LineCount = endLine - sections[i].StartLine + 1
 		sections[i].CharCount = p.calculateCharCount(nil, content, sections[i].StartLine, endLine)
 	}
-	
+
 	return sections
 }
 
@@ -194,7 +194,7 @@ func (p *Parser) buildHierarchy(sections []types.Section) []types.Section {
 		// Create a new section with empty children
 		newSection := section
 		newSection.Children = make([]types.Section, 0)
-		
+
 		if len(stack) == 0 {
 			// This is a root level section
 			result = append(result, newSection)
@@ -291,7 +291,7 @@ func (p *Parser) findSectionEnd(sections []types.Section, target *types.Section)
 			found = true
 		}
 	}
-	
+
 	// If no children found, find the next section at the same or higher level
 	found = false
 	for _, section := range sections {
@@ -302,6 +302,6 @@ func (p *Parser) findSectionEnd(sections []types.Section, target *types.Section)
 			found = true
 		}
 	}
-	
+
 	return target.EndLine
 }

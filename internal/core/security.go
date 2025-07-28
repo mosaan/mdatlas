@@ -22,18 +22,18 @@ func NewAccessControl(baseDir string) (*AccessControl, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve base directory: %w", err)
 	}
-	
+
 	// Check if base directory exists
 	if _, err := os.Stat(absBaseDir); os.IsNotExist(err) {
 		return nil, fmt.Errorf("base directory does not exist: %s", absBaseDir)
 	}
-	
+
 	config := &types.AccessConfig{
 		BaseDir:     absBaseDir,
 		AllowedExts: []string{".md", ".markdown", ".txt"},
 		MaxFileSize: 50 * 1024 * 1024, // 50MB
 	}
-	
+
 	return &AccessControl{config: config}, nil
 }
 
@@ -44,27 +44,27 @@ func (ac *AccessControl) IsAllowed(filePath string) bool {
 	if err != nil {
 		return false
 	}
-	
+
 	// Check if path is within base directory
 	if !ac.isWithinBaseDir(absPath) {
 		return false
 	}
-	
+
 	// Check file extension
 	if !ac.isAllowedExtension(absPath) {
 		return false
 	}
-	
+
 	// Check file size
 	if !ac.isAllowedSize(absPath) {
 		return false
 	}
-	
+
 	// Check if file exists and is readable
 	if !ac.isReadable(absPath) {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -77,30 +77,30 @@ func (ac *AccessControl) ValidatePath(filePath string) (string, error) {
 	} else {
 		absPath = filepath.Join(ac.config.BaseDir, filePath)
 	}
-	
+
 	// Clean the path to remove any path traversal attempts
 	cleanPath := filepath.Clean(absPath)
-	
+
 	// Check if path is within base directory
 	if !ac.isWithinBaseDir(cleanPath) {
 		return "", fmt.Errorf("path outside base directory: %s", filePath)
 	}
-	
+
 	// Check file extension
 	if !ac.isAllowedExtension(cleanPath) {
 		return "", fmt.Errorf("file extension not allowed: %s", filepath.Ext(cleanPath))
 	}
-	
+
 	// Check if file exists
 	if _, err := os.Stat(cleanPath); os.IsNotExist(err) {
 		return "", fmt.Errorf("file does not exist: %s", filePath)
 	}
-	
+
 	// Check file size
 	if !ac.isAllowedSize(cleanPath) {
 		return "", fmt.Errorf("file too large: %s", filePath)
 	}
-	
+
 	return cleanPath, nil
 }
 
@@ -111,26 +111,26 @@ func (ac *AccessControl) isWithinBaseDir(absPath string) bool {
 	if !strings.HasSuffix(baseDir, string(os.PathSeparator)) {
 		baseDir += string(os.PathSeparator)
 	}
-	
+
 	if !strings.HasSuffix(absPath, string(os.PathSeparator)) {
 		// For files, check if the directory is within base
 		dir := filepath.Dir(absPath) + string(os.PathSeparator)
 		return strings.HasPrefix(dir, baseDir)
 	}
-	
+
 	return strings.HasPrefix(absPath, baseDir)
 }
 
 // isAllowedExtension checks if the file extension is allowed
 func (ac *AccessControl) isAllowedExtension(filePath string) bool {
 	ext := strings.ToLower(filepath.Ext(filePath))
-	
+
 	for _, allowedExt := range ac.config.AllowedExts {
 		if ext == allowedExt {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -140,7 +140,7 @@ func (ac *AccessControl) isAllowedSize(filePath string) bool {
 	if err != nil {
 		return false
 	}
-	
+
 	return stat.Size() <= ac.config.MaxFileSize
 }
 
@@ -166,45 +166,45 @@ func (ac *AccessControl) UpdateConfig(config types.AccessConfig) error {
 	if err != nil {
 		return fmt.Errorf("invalid base directory: %w", err)
 	}
-	
+
 	if _, err := os.Stat(absBaseDir); os.IsNotExist(err) {
 		return fmt.Errorf("base directory does not exist: %s", absBaseDir)
 	}
-	
+
 	// Validate file size limit
 	if config.MaxFileSize <= 0 {
 		return fmt.Errorf("max file size must be positive")
 	}
-	
+
 	// Validate allowed extensions
 	if len(config.AllowedExts) == 0 {
 		return fmt.Errorf("at least one allowed extension must be specified")
 	}
-	
+
 	// Update configuration
 	ac.config = &types.AccessConfig{
 		BaseDir:     absBaseDir,
 		AllowedExts: config.AllowedExts,
 		MaxFileSize: config.MaxFileSize,
 	}
-	
+
 	return nil
 }
 
 // ListAllowedFiles lists all files within the base directory that are allowed
 func (ac *AccessControl) ListAllowedFiles() ([]string, error) {
 	var allowedFiles []string
-	
+
 	err := filepath.Walk(ac.config.BaseDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		
+
 		// Skip directories
 		if info.IsDir() {
 			return nil
 		}
-		
+
 		// Check if file is allowed
 		if ac.IsAllowed(path) {
 			// Convert to relative path from base directory
@@ -214,10 +214,10 @@ func (ac *AccessControl) ListAllowedFiles() ([]string, error) {
 			}
 			allowedFiles = append(allowedFiles, relPath)
 		}
-		
+
 		return nil
 	})
-	
+
 	return allowedFiles, err
 }
 
@@ -227,18 +227,18 @@ func (ac *AccessControl) GetFileInfo(filePath string) (*FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	stat, err := os.Stat(validPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get file info: %w", err)
 	}
-	
+
 	// Calculate relative path from base directory
 	relPath, err := filepath.Rel(ac.config.BaseDir, validPath)
 	if err != nil {
 		relPath = validPath
 	}
-	
+
 	return &FileInfo{
 		Path:         validPath,
 		RelativePath: relPath,
@@ -277,12 +277,12 @@ func (sfr *SecureFileReader) ReadFile(filePath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	content, err := os.ReadFile(validPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
-	
+
 	return content, nil
 }
 
@@ -292,9 +292,9 @@ func (sfr *SecureFileReader) ReadFileLines(filePath string, startLine, endLine i
 	if err != nil {
 		return nil, err
 	}
-	
+
 	lines := strings.Split(string(content), "\n")
-	
+
 	// Validate line ranges
 	if startLine < 1 {
 		startLine = 1
@@ -305,7 +305,6 @@ func (sfr *SecureFileReader) ReadFileLines(filePath string, startLine, endLine i
 	if startLine > endLine {
 		return nil, fmt.Errorf("invalid line range: start=%d, end=%d", startLine, endLine)
 	}
-	
-	return lines[startLine-1:endLine], nil
-}
 
+	return lines[startLine-1 : endLine], nil
+}
