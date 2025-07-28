@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -17,7 +18,11 @@ func setupTest(t *testing.T) (string, string) {
 	}
 
 	projectRoot := filepath.Join(wd, "..", "..")
-	binaryPath := filepath.Join(projectRoot, "bin", "mdatlas")
+	binaryName := "mdatlas"
+	if runtime.GOOS == "windows" {
+		binaryName += ".exe"
+	}
+	binaryPath := filepath.Join(projectRoot, "bin", binaryName)
 
 	// Check if binary exists, build if not
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -356,6 +357,11 @@ Content with various formatting.`
 }
 
 func TestEdgeCasesFilePermissions(t *testing.T) {
+	// Skip this test on Windows as file permissions work differently
+	if runtime.GOOS == "windows" {
+		t.Skip("File permission tests are not reliable on Windows")
+	}
+
 	projectRoot, binaryPath := setupTest(t)
 
 	// Create file with restricted permissions

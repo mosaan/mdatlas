@@ -12,7 +12,11 @@ all: build
 build:
 	@echo "Building ${BINARY_NAME}..."
 	@mkdir -p bin
+ifeq ($(OS),Windows_NT)
+	go build ${LDFLAGS} -o bin/${BINARY_NAME}.exe cmd/mdatlas/main.go
+else
 	go build ${LDFLAGS} -o bin/${BINARY_NAME} cmd/mdatlas/main.go
+endif
 
 # Run tests
 test:
